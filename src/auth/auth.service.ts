@@ -6,6 +6,8 @@ import * as uuid from 'uuid';
 import * as bcrypt from 'bcryptjs'
 import { RegisterUserDto } from './dto/register-user.dto';
 import { Response } from 'express';
+import { Refresh_Token } from './user-refresh_token.model';
+import { InjectModel } from '@nestjs/sequelize';
 
 export const REFRESH_TOKEN_NAME = 'refresh_token';
 
@@ -13,18 +15,23 @@ export const REFRESH_TOKEN_NAME = 'refresh_token';
 export class AuthService {
 
     EXPIRE_DAY_REFRESH_TOKEN = 30
-  
+
 
     constructor(
         private User_Service: UsersService,
-        private Jwt_Service: JwtService
+        private Jwt_Service: JwtService,
+
+        @InjectModel(Refresh_Token)
+        private Refresh_Token_Repo: typeof Refresh_Token,
     ) { }
 
 
 
     async login(dto: LoginUserDto) {
-        const user =  await this.validate_user(dto)
+
+        const user = await this.validate_user(dto)
         const tokens = await this.generate_tokens(user)
+        await this.Refresh_Token_Repo.create({user_id: user.id, refresh_token: tokens.refresh_token})
         return {
             user,
             ...tokens,
@@ -37,6 +44,7 @@ export class AuthService {
         const hashPassword = await bcrypt.hash(userDto.password, 5);
         const user = await this.User_Service.create({ ...userDto, password: hashPassword })
         const tokens = await this.generate_tokens(user)
+        await this.Refresh_Token_Repo.create({user_id: user.id, refresh_token: tokens.refresh_token})
         return {
             user,
             ...tokens,
@@ -72,8 +80,10 @@ export class AuthService {
     async get_new_tokens(refresh_token: string) {
         const result = await this.Jwt_Service.verify(refresh_token)
         if (!result) throw new UnauthorizedException('Token Not Valide')
+        const check_token =  await this.Refresh_Token_Repo.findOne({where: {refresh_token: refresh_token}})
+        if (!check_token) throw new UnauthorizedException('Token Was Blocked !!!')
         let user = await this.User_Service.get_by_id(result.id)
-        if(!user) throw new UnauthorizedException('User Not Found') 
+        if (!user) throw new UnauthorizedException('User Not Found')
         user.password = ''
         if (!user) throw new HttpException('User Not Found', HttpStatus.BAD_REQUEST)
         const tokens = await this.generate_tokens(user)
@@ -85,10 +95,12 @@ export class AuthService {
         const expiresIn = new Date()
         expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
         res.cookie(REFRESH_TOKEN_NAME, refresh_token, {
+            // domain: process.env.DOMAIN_SERVER,
+            domain: undefined,                             // <====== ТУТ ПОМУЧЕЛСЯ ИЗ ЗА ip
+            secure: false,
+
             httpOnly: true,
-            domain: process.env.DOMAIN_SERVER,
             expires: expiresIn,
-            secure: true,
             sameSite: 'none'
         })
     }
@@ -96,10 +108,12 @@ export class AuthService {
 
     remove_token_from_response(res: Response) {
         res.cookie(REFRESH_TOKEN_NAME, '', {
-            httpOnly: true, 
-            domain: process.env.DOMAIN_SERVER,
+            // domain: process.env.DOMAIN_SERVER,
+            domain: undefined,
+            secure: false,
+
+            httpOnly: true,
             expires: new Date(0),
-            secure: true,
             sameSite: 'none'
         })
     }
@@ -115,6 +129,12 @@ export class AuthService {
             throw new HttpException('Token Not Valid !!!', HttpStatus.BAD_REQUEST)
         }
     }
+
+    async delete_refresh_token(token: string) {
+        await this.Refresh_Token_Repo.destroy({where: {refresh_token: token}})
+    }
+
+
 
 
 

@@ -29,10 +29,12 @@ async function start() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Docs API')
     .setDescription(`
+      CODE: https://github.com/DemDemi/main
       TG: @DemskisTG
       Email: demskismaili@gmail.com
-      Name: Demo Tbilisi
-      Хотел бы дописать фронт-энд, используя (EJS + WebSocket) + RabbitMQ
+      HH: https://tbilisi.headhunter.ge/resume/5b8fc329ff0ed0eb070039ed1f435654516f6e
+      Name: Demo 
+      Хотел бы дописать фронт, используя (EJS + WebSocket) + RabbitMQ
       Но торопился закончить раньше срока, поскольку проверять вам много,
       а мне важно, чтобы проверили именно моё,
       с уважением, дэмо.

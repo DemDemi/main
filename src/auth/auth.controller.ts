@@ -41,6 +41,7 @@ export class AuthController {
         @Req() req: Request
     ) {
         const refresh_token_from_cookies = req.cookies[REFRESH_TOKEN_NAME]
+        console.log(req.cookies)
         if (!refresh_token_from_cookies) {
             this.Auth_Service.remove_token_from_response(res)
             throw new UnauthorizedException('Bad Refresh Token')
@@ -63,8 +64,10 @@ export class AuthController {
     @ApiOperation({ summary: 'User Logout' })
     @ApiResponse({ status: 200, description: 'New token', type: Boolean })
     @Post('/logout')
-    async log_out(@Res({ passthrough: true }) res: Response) {
+    async log_out(@Res({ passthrough: true }) res: Response,  @Req() req: Request) {
         this.Auth_Service.remove_token_from_response(res)
+        const refresh_token_from_cookies = req.cookies[REFRESH_TOKEN_NAME]
+        await this.Auth_Service.delete_refresh_token(refresh_token_from_cookies)
         return true
     }
 

@@ -23,14 +23,6 @@ export class FilesController {
 
 
 
-    @ApiOperation({ summary: 'Get By Id' })
-    @ApiResponse({ status: 200, type: FileResponseDto })
-    @UseGuards(JwtAuthGuard)
-    @Get('/:id')
-    async get_by_id(id: number) {
-        await this.Files_Service.get_by_id(id);
-        return true
-    }
 
     @ApiOperation({ summary: 'Download By Id' })
     @ApiResponse({ status: 200, type: FileResponseDto })
@@ -114,10 +106,13 @@ export class FilesController {
         return true
     }
 
+    @ApiOperation({ summary: 'Get By Id' })
+    @ApiResponse({ status: 200, type: FileResponseDto })
+    @UseGuards(JwtAuthGuard)
+    @Get('/:id')
+    async get_by_id(@Param('id') id: number) {
+        return await this.Files_Service.get_by_id(id);
+    }
 
-    //     o /file/delete/:id [DELETE] - удаляет документ из базы и локального 
-    // хранилища; 
-    // o /file/:id [GET] - вывод информации о выбранном файле;  
-    // o /file/download/:id [GET] - скачивание конкретного файла; 
-    // o /file/update/:id [PUT] - об
+
 }
